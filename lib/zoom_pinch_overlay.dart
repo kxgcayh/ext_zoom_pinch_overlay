@@ -1,3 +1,5 @@
+// ignore_for_file: must_be_immutable
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:vector_math/vector_math_64.dart';
@@ -42,7 +44,7 @@ class _TransformWidgetState extends State<_TransformWidget> {
 /// by inserting a [OverlayEntry].
 ///
 class ZoomOverlay extends StatefulWidget {
-  const ZoomOverlay({
+  ZoomOverlay({
     Key? key,
     this.twoTouchOnly = false,
     required this.child,
@@ -53,6 +55,7 @@ class ZoomOverlay extends StatefulWidget {
     this.modalBarrierColor,
     this.onScaleStart,
     this.onScaleStop,
+    this.onScaleUpdate,
   }) : super(key: key);
 
   /// A widget to make zoomable.
@@ -80,8 +83,9 @@ class ZoomOverlay extends StatefulWidget {
   final Color? modalBarrierColor;
 
   /// add callback functions
-  final VoidCallback? onScaleStart;
-  final VoidCallback? onScaleStop;
+  void Function(double dx, double dy)? onScaleUpdate;
+  void Function(ScaleStartDetails details)? onScaleStart;
+  void Function(ScaleEndDetails details)? onScaleStop;
 
   @override
   _ZoomOverlayState createState() => _ZoomOverlayState();
@@ -145,7 +149,7 @@ class _ZoomOverlayState extends State<ZoomOverlay>
     if (widget.twoTouchOnly && _touchCount < 2) return;
 
     // call start callback before everything else
-    widget.onScaleStart?.call();
+    widget.onScaleStart?.call(details);
     _startFocalPoint = details.focalPoint;
 
     _matrix = Matrix4.identity();
@@ -199,6 +203,7 @@ class _ZoomOverlayState extends State<ZoomOverlay>
     if (_transformWidget.currentState != null) {
       _transformWidget.currentState!.setMatrix(_matrix);
     }
+    widget.onScaleUpdate?.call(dx, dy);
   }
 
   void onScaleEnd(ScaleEndDetails details) {
@@ -217,7 +222,7 @@ class _ZoomOverlayState extends State<ZoomOverlay>
       ..forward();
 
     // call end callback function when scale ends
-    widget.onScaleStop?.call();
+    widget.onScaleStop?.call(details);
   }
 
   Widget _build(BuildContext context) {
